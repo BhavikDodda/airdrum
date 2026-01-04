@@ -151,7 +151,34 @@ def score_L_stick(input):
                 else:
                     var0 = [1.0, 0.0, 0.0]
     return var0
-
+#-------
+def score_R_2(input):
+    if input[36] <= 0.5671384930610657:
+        if input[93] <= -8.453370094299316:
+            var0 = [0.0, 0.0, 1.0]
+        else:
+            if input[21] <= -7.904052972793579:
+                if input[144] <= 0.3271484971046448:
+                    var0 = [0.0, 0.0, 1.0]
+                else:
+                    var0 = [0.0, 0.4, 0.6]
+            else:
+                if input[266] <= 0.9555664956569672:
+                    var0 = [0.0, 1.0, 0.0]
+                else:
+                    var0 = [0.0, 0.8, 0.2]
+    else:
+        if input[202] <= -14.831546783447266:
+            var0 = [1.0, 0.0, 0.0]
+        else:
+            if input[298] <= -19.4091796875:
+                var0 = [1.0, 0.0, 0.0]
+            else:
+                if input[40] <= 12.695316314697266:
+                    var0 = [0.0, 1.0, 0.0]
+                else:
+                    var0 = [0.4, 0.6, 0.0]
+    return var0
 # -----------------------------
 # AUDIO TRIGGER
 # -----------------------------
@@ -232,14 +259,14 @@ try:
                 # flatten 50 x 6 → 300
                 input_vector = [x for r in window_R for x in r]
 
-                output_R = score_R(input_vector)
+                output_R = score_L_stick(input_vector)
                 if row_variation(row) > VARTHRESHOLD:
                     predicted = output_R.index(max(output_R))
                     if predicted == 0:      # crash
                         FLOORTOM.stop()
                         CRASH.play()
                         print("Played Crash")
-                    elif predicted == 1:    # floortom
+                    elif predicted == 2:    # floortom
                         CRASH.stop()
                         FLOORTOM.play()
                         print("Played FloorTom")

@@ -39,10 +39,13 @@ try:
     while (time.time() - start_time) < duration_seconds:
         data, addr = sock.recvfrom(1024)
         decoded = data.decode().strip()
-        row = decoded.split(",")
-        row.append(activity)
-        writer.writerow(row)
-        print(row)
+        rowinit = decoded.split(",")
+        if float(rowinit[1])==1.0:  # to filter only valid data rows
+            row=[rowinit[0],rowinit[2],rowinit[3],rowinit[4],rowinit[5],rowinit[6],rowinit[7]]
+
+            row.append(activity)
+            writer.writerow(row)
+            print(row)
 except KeyboardInterrupt:
     print("\nStopped. File saved.")
  
