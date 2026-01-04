@@ -22,6 +22,12 @@ pygame.mixer.pre_init(44100, -16, 2, 256)
 pygame.init()
 
 BASE_DIR = Path(__file__).resolve().parent
+
+CRASH = pygame.mixer.Sound(str(BASE_DIR / "sound" / "crash.mp3"))
+FLOORTOM = pygame.mixer.Sound(str(BASE_DIR / "sound" / "kick.mp3"))
+SNARE = pygame.mixer.Sound(str(BASE_DIR / "sound" / "snare.mpeg"))
+HIHAT = pygame.mixer.Sound(str(BASE_DIR / "sound" / "hihat.mpeg"))
+
 SNARE_PATH = BASE_DIR / "sound" / "snare.mpeg"
 
 SNARE = pygame.mixer.Sound(str(SNARE_PATH))
@@ -30,13 +36,14 @@ SNARE = pygame.mixer.Sound(str(SNARE_PATH))
 # -----------------------------
 # SLIDING WINDOW
 # -----------------------------
-window = deque(maxlen=WINDOW_SIZE)
+window_L = deque(maxlen=WINDOW_SIZE)
+window_R = deque(maxlen=WINDOW_SIZE)
 # -----------------------------
 
 # -----------------------------
 # MODEL
 # -----------------------------
-def score(input):
+def score_L(input):
     if input[146] <= -0.5661009848117828:
         if input[32] <= -0.4818115085363388:
             var0 = [0.0, 1.0, 0.0]
@@ -91,6 +98,59 @@ def score(input):
                     var0 = [0.0, 0.0, 1.0]
     return var0
 # -----------------------------
+def score_R(input):
+    if input[19] <= -0.5087279975414276:
+        if input[264] <= 0.2947999984025955:
+            if input[164] <= 0.11511199921369553:
+                if input[171] <= -24.29199981689453:
+                    var0 = [0.0, 0.4, 0.6]
+                else:
+                    var0 = [0.0, 1.0, 0.0]
+            else:
+                if input[266] <= -0.19079599529504776:
+                    var0 = [1.0, 0.0, 0.0]
+                else:
+                    var0 = [0.0, 0.0, 1.0]
+        else:
+            if input[233] <= -58.89893341064453:
+                var0 = [0.0, 1.0, 0.0]
+            else:
+                if input[259] <= -0.5972900092601776:
+                    var0 = [0.0, 0.0, 1.0]
+                else:
+                    var0 = [0.2, 0.0, 0.8]
+    else:
+        if input[175] <= -0.8533934950828552:
+            var0 = [0.0, 0.8333333333333334, 0.16666666666666666]
+        else:
+            if input[265] <= -0.6979369819164276:
+                var0 = [0.6, 0.0, 0.4]
+            else:
+                var0 = [1.0, 0.0, 0.0]
+    return var0
+# ----------------------------------
+
+def score_L_stick(input):
+    if input[278] <= -0.1757199987769127:
+        if input[188] <= 0.15112300217151642:
+            var0 = [0.0, 1.0, 0.0]
+        else:
+            var0 = [1.0, 0.0, 0.0]
+    else:
+        if input[108] <= 0.6574095189571381:
+            if input[80] <= 0.08630399778485298:
+                var0 = [0.0, 0.4, 0.6]
+            else:
+                var0 = [0.0, 0.0, 1.0]
+        else:
+            if input[12] <= 0.6967165172100067:
+                var0 = [0.0, 0.2857142857142857, 0.7142857142857143]
+            else:
+                if input[67] <= -0.3919675052165985:
+                    var0 = [0.4, 0.6, 0.0]
+                else:
+                    var0 = [1.0, 0.0, 0.0]
+    return var0
 
 # -----------------------------
 # AUDIO TRIGGER
@@ -145,25 +205,45 @@ try:
     while (time.time() - start_time) < DURATION_SECONDS:
         data, _ = sock.recvfrom(1024)
         decoded = data.decode().strip()
+        mainrow=list(map(float, decoded.split(",")))[1:]
+        row = mainrow[1:]
+        print("row",mainrow)
+        if mainrow[0]==0:
+            window_L.append(row)
+            print("L",row_variation(row))
+            if len(window_L) == WINDOW_SIZE:
+                # flatten 50 x 6 → 300
+                input_vector = [x for r in window_L for x in r]
 
-        row = list(map(float, decoded.split(",")))[2:]
-        print("row",row)
+                output_L = score_L_stick(input_vector)
+                if row_variation(row) > VARTHRESHOLD:
+                    if output_L[2] == 1.0:
+                        HIHAT.stop()
+                        SNARE.play()
+                        print("Played Snare")
+                    elif output_L[0]==1.0:
+                        SNARE.stop()
+                        HIHAT.play()
+                        print("Played HiHat")
+        else:
+            window_R.append(row)
+            print("R",row_variation(row))
+            if len(window_R) == WINDOW_SIZE:
+                # flatten 50 x 6 → 300
+                input_vector = [x for r in window_R for x in r]
 
-        window.append(row)
-        print(row_variation(row))
-        if len(window) == WINDOW_SIZE:
-            # flatten 50 x 6 → 300
-            input_vector = [x for r in window for x in r]
-
-            output = score(input_vector)
-            if row_variation(row) > VARTHRESHOLD:
-                if output[2] == 1.0:
-                    pygame.mixer.Sound("sound/snare.mpeg").play()
-                    print("Played Snare")
-                elif output[0]==1.0:
-                    pygame.mixer.Sound("sound/hihat.mpeg").play()
-                    print("Played HiHat")
-                
+                output_R = score_R(input_vector)
+                if row_variation(row) > VARTHRESHOLD:
+                    predicted = output_R.index(max(output_R))
+                    if predicted == 0:      # crash
+                        FLOORTOM.stop()
+                        CRASH.play()
+                        print("Played Crash")
+                    elif predicted == 1:    # floortom
+                        CRASH.stop()
+                        FLOORTOM.play()
+                        print("Played FloorTom")
+                    
 
 except KeyboardInterrupt:
     print("Stopped by user.")
