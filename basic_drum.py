@@ -9,7 +9,7 @@ from pathlib import Path
 # -----------------------------
 UDP_IP = "0.0.0.0"
 UDP_PORT = 5005
-DURATION_SECONDS = 120
+DURATION_SECONDS = 5020
 
 WINDOW_SIZE = 50
 FEATURES_PER_ROW = 6
@@ -24,7 +24,7 @@ pygame.init()
 BASE_DIR = Path(__file__).resolve().parent
 
 CRASH = pygame.mixer.Sound(str(BASE_DIR / "sound" / "crash.mp3"))
-FLOORTOM = pygame.mixer.Sound(str(BASE_DIR / "sound" / "kick.mp3"))
+FLOORTOM = pygame.mixer.Sound(str(BASE_DIR / "sound" / "snaredrum.mp3"))
 SNARE = pygame.mixer.Sound(str(BASE_DIR / "sound" / "snare.mpeg"))
 HIHAT = pygame.mixer.Sound(str(BASE_DIR / "sound" / "hihat.mpeg"))
 
@@ -151,6 +151,24 @@ def score_L_stick(input):
                 else:
                     var0 = [1.0, 0.0, 0.0]
     return var0
+#----
+def score_R_new(input):
+    if input[144] <= 0.6061400175094604:
+        var0 = [1.0, 0.0]
+    else:
+        var0 = [0.0, 1.0]
+    return var0
+
+#-----
+def score_l_new(input):
+    if input[240] <= 0.6369020044803619:
+        var0 = [1.0, 0.0]
+    else:
+        if input[168] <= 0.42211899161338806:
+            var0 = [1.0, 0.0]
+        else:
+            var0 = [0.0, 1.0]
+    return var0
 #-------
 def score_R_2(input):
     if input[36] <= 0.5671384930610657:
@@ -242,16 +260,14 @@ try:
                 # flatten 50 x 6 → 300
                 input_vector = [x for r in window_L for x in r]
 
-                output_L = score_L_stick(input_vector)
+                output_L = score_l_new(input_vector)
                 if row_variation(row) > VARTHRESHOLD:
-                    if output_L[2] == 1.0:
-                        HIHAT.stop()
+                    if output_L[1] == 1.0:
                         SNARE.play()
-                        print("Played Snare")
-                    elif output_L[0]==1.0:
-                        SNARE.stop()
-                        HIHAT.play()
                         print("Played HiHat")
+                    elif output_L[0]==1.0:
+                        HIHAT.play()
+                        print("Played Snare")
         else:
             window_R.append(row)
             print("R",row_variation(row))
@@ -259,15 +275,13 @@ try:
                 # flatten 50 x 6 → 300
                 input_vector = [x for r in window_R for x in r]
 
-                output_R = score_L_stick(input_vector)
+                output_R = score_R_new(input_vector)
                 if row_variation(row) > VARTHRESHOLD:
                     predicted = output_R.index(max(output_R))
                     if predicted == 0:      # crash
-                        FLOORTOM.stop()
                         CRASH.play()
                         print("Played Crash")
-                    elif predicted == 2:    # floortom
-                        CRASH.stop()
+                    elif predicted == 1:    # floortom
                         FLOORTOM.play()
                         print("Played FloorTom")
                     
